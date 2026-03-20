@@ -1,0 +1,14 @@
+{
+  "name": "domqa",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "pnpm --filter @domqa/web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm --filter @domqa/shared test",
+    "db:generate": "pnpm --filter @domqa/database db:generate",
+    "db:push": "pnpm --filter @domqa/database db:push",
+    "db:seed": "pnpm --filter @domqa/database db:seed"
+  }
+}
