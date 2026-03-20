@@ -1,0 +1,5 @@
+import { notFound } from 'next/navigation';
+import { Card } from '../../../../components/ui';
+import { requireUser } from '../../../../server/auth/guards';
+import { prisma } from '../../../../server/db';
+export default async function ProjectSettingsPage({ params }: { params: Promise<{ projectId: string }>}) { const user = await requireUser(); const { projectId } = await params; const project = await prisma.project.findFirst({ where: { id: projectId, ownerId: user.id }, include: { memberships: true } }); if (!project) notFound(); return <div className="space-y-6"><h1 className="text-2xl font-semibold">Project settings</h1><Card><dl className="grid gap-3 md:grid-cols-2"><div><dt className="text-sm text-slate-400">Slug</dt><dd>{project.slug}</dd></div><div><dt className="text-sm text-slate-400">Owner memberships</dt><dd>{project.memberships.length}</dd></div></dl><p className="mt-4 text-sm text-slate-400">Capture key management and external exports are scaffold-ready but intentionally lightweight in this MVP.</p></Card></div>; }

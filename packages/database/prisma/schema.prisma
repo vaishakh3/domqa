@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum IssueType {
+  bug
+  ui
+  ux
+  content
+  accessibility
+  suggestion
+}
+
+enum IssuePriority {
+  low
+  medium
+  high
+  critical
+}
+
+enum IssueStatus {
+  open
+  in_progress
+  resolved
+  closed
+}
+
+enum ActivityType {
+  created
+  commented
+  status_changed
+  assigned
+  relocated
+}
+
+enum MembershipRole {
+  owner
+  member
+}
+
+model User {
+  id            String              @id @default(cuid())
+  name          String
+  email         String              @unique
+  passwordHash  String
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  projects      Project[]           @relation("ProjectOwner")
+  memberships   ProjectMembership[]
+  reportedIssues Issue[]            @relation("ReportedIssues")
+  assignedIssues Issue[]            @relation("AssignedIssues")
+  comments      IssueComment[]
+  activities    IssueActivity[]
+}
+
+model Project {
+  id            String              @id @default(cuid())
+  ownerId       String
+  name          String
+  slug          String              @unique
+  description   String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  owner         User                @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  environments  ProjectEnvironment[]
+  issues        Issue[]
+  memberships   ProjectMembership[]
+}
+
+model ProjectEnvironment {
+  id         String   @id @default(cuid())
+  projectId  String
+  name       String
+  createdAt  DateTime @default(now())
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Issue {
+  id                        String           @id @default(cuid())
+  projectId                 String
+  reporterId                String
+  assigneeId                String?
+  key                       String           @unique
+  title                     String
+  description               String
+  type                      IssueType
+  priority                  IssuePriority
+  status                    IssueStatus      @default(open)
+  pageUrl                   String
+  pageTitle                 String
+  pageOrigin                String
+  environment               String?
+  viewportWidth             Int
+  viewportHeight            Int
+  pageWidth                 Int?
+  pageHeight                Int?
+  userAgent                 String
+  browserLanguage           String?
+  screenshotUrl             String?
+  screenshotWidth           Int?
+  screenshotHeight          Int?
+  targetRectX               Float?
+  targetRectY               Float?
+  targetRectWidth           Float?
+  targetRectHeight          Float?
+  selectedElementTag        String?
+  selectedElementId         String?
+  selectedElementClasses    String?
+  selectedElementRole       String?
+  selectedElementName       String?
+  selectedElementAriaLabel  String?
+  selectedElementTextSnippet String?
+  locatorConfidence         Float?
+  lastRelocatedAt           DateTime?
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+  project                   Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reporter                  User             @relation("ReportedIssues", fields: [reporterId], references: [id])
+  assignee                  User?            @relation("AssignedIssues", fields: [assigneeId], references: [id])
+  locator                   IssueLocator?
+  comments                  IssueComment[]
+  activities                IssueActivity[]
+  consoleLogs               ConsoleLogEntry[]
+  networkLogs               NetworkLogEntry[]
+}
+
+model IssueLocator {
+  id                    String   @id @default(cuid())
+  issueId               String   @unique
+  primaryCssSelector    String?
+  xpathSelector         String?
+  testIdSelector        String?
+  ariaSelector          String?
+  textSelector          String?
+  attributeFingerprint  Json
+  ancestryFingerprint   Json
+  siblingFingerprint    Json
+  nearbyTextFingerprint Json
+  rectFingerprint       Json?
+  rawFingerprint        Json
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  issue                  Issue   @relation(fields: [issueId], references: [id], onDelete: Cascade)
+}
+
+model IssueComment {
+  id        String   @id @default(cuid())
+  issueId    String
+  authorId   String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id])
+}
+
+model IssueActivity {
+  id        String       @id @default(cuid())
+  issueId    String
+  actorId    String?
+  type      ActivityType
+  metadata  Json
+  createdAt DateTime     @default(now())
+  issue     Issue        @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  actor     User?        @relation(fields: [actorId], references: [id])
+}
+
+model ConsoleLogEntry {
+  id        String   @id @default(cuid())
+  issueId    String
+  level     String
+  message   String
+  source    String?
+  line      Int?
+  column    Int?
+  timestamp DateTime?
+  metadata  Json?
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+}
+
+model NetworkLogEntry {
+  id           String   @id @default(cuid())
+  issueId       String
+  method       String
+  url          String
+  status       Int?
+  ok           Boolean?
+  resourceType String?
+  startedAt    DateTime?
+  endedAt      DateTime?
+  metadata     Json?
+  issue        Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+}
+
+model ProjectMembership {
+  id        String         @id @default(cuid())
+  projectId  String
+  userId     String
+  role      MembershipRole
+  createdAt DateTime       @default(now())
+  project   Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+}

@@ -1,0 +1,5 @@
+import { NextResponse } from 'next/server';
+import { requireApiUser } from '@/server/auth/guards';
+import { addComment, getIssue } from '@/server/services/issues';
+export async function GET(_: Request, { params }: { params: Promise<{ issueId: string }>}) { try { const user = await requireApiUser(); const { issueId } = await params; const issue = await getIssue(user.id, issueId); return NextResponse.json(issue?.comments || []); } catch (error) { if (error instanceof Response) return error; return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); } }
+export async function POST(request: Request, { params }: { params: Promise<{ issueId: string }>}) { try { const user = await requireApiUser(); const { issueId } = await params; return NextResponse.json(await addComment(user.id, issueId, await request.json())); } catch (error) { if (error instanceof Response) return error; return NextResponse.json({ error: error instanceof Error ? error.message : 'Unable to add comment' }, { status: 400 }); } }

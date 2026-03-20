@@ -1,0 +1,12 @@
+node_modules
+.pnpm-store
+.next
+dist
+build
+coverage
+.env
+.env.local
+*.log
+apps/web/public/uploads/*
+!apps/web/public/uploads/.gitkeep
+packages/database/prisma/dev.db
